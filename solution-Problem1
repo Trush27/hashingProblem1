@@ -1,0 +1,38 @@
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+using namespace std;
+
+int additionalSalesNeeded(vector<int>& sales, int harkirat_id) {
+    vector<int> freq(100001,0);
+    
+    // Count the sales for each chocolate ID
+    for (int i=0;i<sales.size();i++){
+      freq[sales[i]]++;
+    }
+    
+    // Find the maximum sales count for any chocolate ID
+    int maxSales = 0;
+    for (int i=0;i<100001;i++) {
+      if(i==harkirat_id){
+          continue;
+      }
+      maxSales = max(maxSales, freq[i]);
+    }
+    
+    // Determine the sales count for Harkirat's chocolate ID
+    int harkiratSales = freq[harkirat_id];
+    
+    // Calculate the additional sales needed
+    int additionalSales = max(0, maxSales - harkiratSales + 1);
+    
+    return additionalSales;
+}
+int main() {
+    vector<int> sales = {0, 1, 1, 3, 3, 2, 1};
+    int harkirat_id = 2;
+    
+    cout << "Additional sales needed: " << additionalSalesNeeded(sales, harkirat_id) << endl;
+    
+    return 0;
+}
