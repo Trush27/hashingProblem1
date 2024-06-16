@@ -1,0 +1,10 @@
+Harkirat owns a chocolate maker company in a market where every chocolate has a unique ID number. 
+Given an array where each element represents a sale of a chocolate by its ID, and a specific chocolate ID that Harkirat's company sells, 
+Harkirat wants to achieve a monopoly by ensuring his company sells more chocolates of his specific ID than any other ID in the market.
+Determine the number of additional chocolates Harkirat needs to sell to surpass the current maximum sales of any single chocolate ID in the market.
+
+Input:
+An array of integers where each integer represents the ID of a chocolate sold.
+An integer representing the ID of the chocolate sold by Harkirat's company.
+Output:
+The minimum number of additional chocolates Harkirat needs to sell to achieve a monopoly with his specific chocolate ID.
