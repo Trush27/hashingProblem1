@@ -8,12 +8,9 @@
     height: 40px;
 }
 .icon-password{
-    padding-right: 30px;
-    background: url(/images/visibility\ off.png) no-repeat right;
-    background-size: 20px 20px;
+
     background-color: white;
     border: none;
-    margin-right: 15px;
     height: 40px;
 }
 .mx-8{
@@ -39,6 +36,7 @@
     right: 10px;
     position: relative;
     z-index: 2;
+    cursor: pointer; position: absolute; top: 50%; right: 10px; transform: translateY(-50%);
 }
 .forgot-password-link{
     text-decoration: none;
