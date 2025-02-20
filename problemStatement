@@ -8,3 +8,113 @@ An array of integers where each integer represents the ID of a chocolate sold.
 An integer representing the ID of the chocolate sold by Harkirat's company.
 Output:
 The minimum number of additional chocolates Harkirat needs to sell to achieve a monopoly with his specific chocolate ID.
+@model UserDemo
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="row d-flex justify-content-center align-items-center">
+    <img class="col" src="images/logos/pizzashop_logo.png" height="70px" width="70px">
+    <div class="col fs-2 pizza-shop-header">
+        PIZZASHOP
+    </div>
+</div>
+<div class="row w-100">
+    <p class="col fs-3 welcome-text mx-8 my-1">Welcome,</p>
+</div>
+<form asp-controller="Home" asp-action="login" method="post" class="row" id="loginform">
+    <div class="row w-100">
+        <input type="email" asp-for="Email" id="Email" name="Email" placeholder="E-mail" class="icon-email form col mx-8 my-2">
+    </div>
+    
+    <div class="row w-100">
+        <div class="col mx-8 my-2 position-relative w-100 p-0">
+            <input type="password" asp-for="Password" placeholder="Password" name="Password" class="icon-password col w-100 align-items-center" id="Password">
+            <i class="bi bi-eye-slash" id="togglePassword"></i>
+        </div>
+    </div>
+    <div class="row w-100 d-flex align-items-center justify-content-center my-3">
+        <div class="form-check col mx-8 d-flex">
+            <input type="checkbox" asp-for="IsRemember" class="form-check-input row" id="exampleCheck1">
+            <label class="form-check-label row mx-3 " for="exampleCheck1" asp-for="IsRemember">Remember Me</label>
+            <div class=" col forgot-password-div ">
+                <a class="forgot-password-link" asp-controller="Home" asp-action="ForgotPassword" id="forgotPasswordLink">Forgot Password?</a>
+            </div>
+        </div>
+    </div>
+    <div class="row w-100">
+        <button type="submit" class="login-button col mx-8 my-2">Login</button>
+    </div>
+</form>
+<script>
+    document.getElementById('forgotPasswordLink').addEventListener('click', function() {
+        const email = document.getElementById('Email').value;
+        localStorage.setItem('loginEmail', email);
+    });
+
+    $('#loginform').validate({
+        rules: {
+            Email: {
+                required: true
+            },
+            Password: {
+                required: true
+            }
+        },
+        messages: {
+            Email: {
+                required: "email is required"
+            },
+            Password: {
+                required: "password is required"
+            }
+        }
+    });
+</script>
+
+@model userEmail
+@{
+    ViewData["Title"] = "Forgot Password Page";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="row d-flex justify-content-center align-items-center">
+    <img class="col" src="~/images/logos/pizzashop_logo.png" height="70px" width="70px">
+    <div class="col fs-2 pizza-shop-header">
+        PIZZASHOP
+    </div>
+</div>
+<form asp-controller="Home" asp-action="sendEmailLink" method="post" class="row">
+    <div class="row w-100">
+        <p class="col fs-3 welcome-text mx-8 my-1">Forgot Password</p>
+    </div>
+    <div class="row w-100">
+        <p class="col mx-8 my-1 recover-text"> enter your email and we'll send you a link to reset your password.</p>
+    </div>
+    <div class="row w-100">
+        <input type="email" placeholder="E-mail" asp-for="Email" name="Email" class="icon-email col mx-8 my-2" value="">
+    </div>
+    <div class="row d-flex w-100">
+        <button class="send-button col mx-8 my-2" type="submit">Send</button>
+    </div>
+    <div class="row w-100">
+        <div class="col d-flex w-100 justify-content-center align-items-center my-2">
+            <a class="row text-decoration-none" asp-controller="Home" asp-action="Index">
+                Back to Login
+            </a>
+        </div>
+    </div>
+</form>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const email = localStorage.getItem('loginEmail');
+        if (email) {
+            document.querySelector('input[name="Email"]').value = email;
+        }
+    });
+</script>
+public IActionResult ForgotPassword(UserDemo model)
+{
+    var Email = model.Email;
+    var vm = new userEmail();
+    vm.Email = Email;
+    return View(vm);
+}
