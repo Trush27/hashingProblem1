@@ -66,11 +66,46 @@
 
       <!-- Main Content -->
       <div class="col-md-9 col-lg-10 main-content">
-        <div class="row-1 navbar-profile w-100">
+        <div class="navbar-profile w-100 py-2 px-3 d-flex align-items-center">
           <button class="btn toggle-sidebar d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
             <img src="images/menu-item-icon.png" alt="" height="30px">
           </button>
-          <img class="col my-2 mx-2" src="images/Default_pfp.svg.png" alt="" height="30px">
+
+            <!-- Profile Dropdown -->
+            <div class="dropdown ms-auto">
+                <div class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <img src="images/Default_pfp.svg.png" alt="Profile" class="profile-pic" height="40" style="cursor: pointer;">
+                </div>
+                <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 250px;">
+                    <!-- Profile Header -->
+                    <li class="d-flex align-items-center mb-3">
+                        <img src="images/Default_pfp.svg.png" alt="Profile" class="rounded-circle" height="50">
+                        <div class="ms-3">
+                            <h6 class="mb-0">John Doe</h6>
+                        </div>
+                    </li>
+                    
+                    <!-- Dropdown Items -->
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center py-2" href="#">
+                            <i class="fas fa-user-circle me-3"></i>
+                            My Profile
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center py-2" href="#">
+                            <i class="fas fa-lock me-3"></i>
+                            Change Password
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center py-2" href="#">
+                            <i class="fas fa-sign-out-alt me-3"></i>
+                            Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
         
         <div class="row-11 d-flex my-2 mx-2">
@@ -119,11 +154,11 @@
                     <td><span class="status-inactive">inactive</span></td>
                     <td>
                       <i class="material-icons"  onclick="editUser()">edit</i>
-                      <i class="material-icons" data-bs-toggle="modal" data-bs-target="#confirmmodal"">delete</i>
+                      <i class="material-icons" data-bs-toggle="modal" data-bs-target="#confirmmodal">delete</i>
                     </td>
                 </tr>
                 <tr>
-                  <td><img src="images/Default_pfp.svg.png" alt="" width="30px" class="mx-2">Samay Raina</td>
+                  <td><img src="images/Default_pfp.svg.png" alt="" width="30px" class="mx-2">Samay</td>
                     <td>samay@work.com</td>
                     <td>1234567890</td>
                     <td>admin</td>
@@ -157,6 +192,35 @@
                 </tr>
             </tbody>
           </table>
+<div class="row mt-4 pagination-container justify-content-end">
+  <div class="col-md-8">
+      <nav aria-label="Page navigation">
+          <ul class="pagination justify-content-end align-items-center">
+            <div class="align-items-center">Items per page:</div>
+            <select class="form-select justify-content-center w-25 m-2">
+              <option selected>select</option>
+              <option value="1">5</option>
+              <option value="2">10</option>
+              <option value="3">15</option>
+            </select>
+            <div class="d-flex align-items-center m-2">
+              <span class="text-muted">Showing 1 - 5 of 14</span>
+            </div>
+              <li class="page-item disabled">
+                  <a class="page-link" href="#" tabindex="-1" aria-disabled="true">
+                      <i class="fas fa-chevron-left"></i>
+                  </a>
+              </li>
+            
+              <li class="page-item">
+                  <a class="page-link" href="#">
+                      <i class="fas fa-chevron-right"></i>
+                  </a>
+              </li>
+          </ul>
+      </nav>
+  </div>
+</div>
         </div>
       </div>
     </div>
