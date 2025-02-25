@@ -8,72 +8,163 @@ An array of integers where each integer represents the ID of a chocolate sold.
 An integer representing the ID of the chocolate sold by Harkirat's company.
 Output:
 The minimum number of additional chocolates Harkirat needs to sell to achieve a monopoly with his specific chocolate ID.
-@model UserDemo
-@{
-    Layout = "~/Views/Shared/_Layout.cshtml";
-}
-<div class="row d-flex justify-content-center align-items-center">
-    <img class="col" src="images/logos/pizzashop_logo.png" height="70px" width="70px">
-    <div class="col fs-2 pizza-shop-header">
-        PIZZASHOP
-    </div>
-</div>
-<div class="row w-100">
-    <p class="col fs-3 welcome-text mx-8 my-1">Welcome,</p>
-</div>
-<form asp-controller="Home" asp-action="login" method="post" class="row" id="loginform">
-    <div class="row w-100">
-        <input type="email" asp-for="Email" id="Email" name="Email" placeholder="E-mail" class="icon-email form col mx-8 my-2">
-    </div>
-    
-    <div class="row w-100">
-        <div class="col mx-8 my-2 position-relative w-100 p-0">
-            <input type="password" asp-for="Password" placeholder="Password" name="Password" class="icon-password col w-100 align-items-center" id="Password">
-            <i class="bi bi-eye-slash" id="togglePassword"></i>
-        </div>
-    </div>
-    <div class="row w-100 d-flex align-items-center justify-content-center my-3">
-        <div class="form-check col mx-8 d-flex">
-            <input type="checkbox" asp-for="IsRemember" class="form-check-input row" id="exampleCheck1">
-            <label class="form-check-label row mx-3 " for="exampleCheck1" asp-for="IsRemember">Remember Me</label>
-            <div class=" col forgot-password-div ">
-                <a class="forgot-password-link" asp-controller="Home" asp-action="ForgotPassword" id="forgotPasswordLink">Forgot Password?</a>
-            </div>
-        </div>
-    </div>
-    <div class="row w-100">
-        <button type="submit" class="login-button col mx-8 my-2">Login</button>
-    </div>
-</form>
-<script>
-    document.getElementById('forgotPasswordLink').addEventListener('click', function() {
-        const email = document.getElementById('Email').value;
-        localStorage.setItem('loginEmail', email);
-    });
+using System.Diagnostics;
+using System.Net.Mail;
+using System.Net;
+using Microsoft.AspNetCore.Mvc;
+using backend.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 
-    $('#loginform').validate({
-        rules: {
-            Email: {
-                required: true
-            },
-            Password: {
-                required: true
+namespace backend.Controllers
+{
+    public class HomeController : Controller
+    {
+        private readonly ILogger<HomeController> _logger;
+        private readonly PostgresContext _dbcontext;
+        private readonly IConfiguration _config;
+
+        public HomeController(ILogger<HomeController> logger, PostgresContext context, IConfiguration config)
+        {
+            _logger = logger;
+            _dbcontext = context;
+            _config = config;
+        }
+
+        public IActionResult Index()
+        {
+            string UserEmail = HttpContext.Session.GetString("Email");
+            if (UserEmail != null)
+            {
+                var existingUser = _dbcontext.Userlogins.Any(u => u.Email == UserEmail);
+                if (existingUser)
+                {
+                    return RedirectToAction("Content", "Main");
+                }
             }
-        },
-        messages: {
-            Email: {
-                required: "email is required"
-            },
-            Password: {
-                required: "password is required"
+            if (Request.Cookies["Email"] != null)
+            {
+                return RedirectToAction("Content", "Main");
+            }
+            return View();
+        }
+
+        public IActionResult ForgotPassword(string email)
+        {
+            var vm = new userEmail(email);
+            return View(vm);
+        }
+
+        [HttpGet]
+        public IActionResult ResetPassword(string email)
+        {
+            return View(new ResetPasswordModel { Email = email });
+        }
+
+        [HttpPost]
+        public IActionResult ResetPassword(ResetPasswordModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            if (model.NewPassword != model.ConfirmPassword)
+            {
+                ModelState.AddModelError("ConfirmPassword", "Passwords do not match");
+                return View(model);
+            }
+
+            var user = _dbcontext.Userlogins.FirstOrDefault(u => u.Email == model.Email);
+            if (user == null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+            user.Password = encryptPassword(model.NewPassword);
+            _dbcontext.SaveChanges();
+            return RedirectToAction("Index", "Home");
+        }
+
+        [HttpPost]
+        public IActionResult Login(UserDemo model)
+        {
+            string userPassword = encryptPassword(model.Password);
+            var existingUser = _dbcontext.Userlogins.FirstOrDefault(u => u.Email == model.Email && u.Password == userPassword);
+            if (existingUser != null)
+            {
+                HttpContext.Session.SetString("Email", model.Email);
+                if (model.IsRemember)
+                {
+                    CookieOptions cookie = new CookieOptions()
+                    {
+                        Expires = DateTime.Now.AddDays(30)
+                    };
+
+                    Response.Cookies.Append("Email", model.Email, cookie);
+                    Response.Cookies.Append("Password", model.Password, cookie);
+                }
+                else return RedirectToAction("Content", "Main");
+            }
+            return RedirectToAction("Index", "Home");
+        }
+
+        [HttpPost]
+        public IActionResult SendEmailLink(userEmail model)
+        {
+            string toemail = model.Email;
+            SendEmail(toemail);
+            return RedirectToAction("Index", "Home");
+        }
+
+        public void SendEmail(string toemail)
+        {
+            try
+            {
+                string emailBody = $@"<a href='http://localhost:5150/Home/ResetPassword?email={WebUtility.UrlEncode(toemail)}'>Reset Password</a>";
+                string smtpEmail = _config.GetValue<string>("SMTPCredentials:Email");
+                string smtpappPass = _config.GetValue<string>("SMTPCredentials:AppPass");
+
+                SmtpClient smtpclient = new SmtpClient("mail.etatvasoft.com")
+                {
+                    Port = 587,
+                    Credentials = new NetworkCredential(smtpEmail, smtpappPass),
+                    EnableSsl = true,
+                };
+
+                MailMessage mail = new MailMessage
+                {
+                    From = new MailAddress(smtpEmail),
+                    Subject = "Reset Password for PizzaShop",
+                    Body = emailBody,
+                    IsBodyHtml = true,
+                };
+                mail.To.Add(toemail);
+                smtpclient.Send(mail);
+            }
+            catch (Exception ex)
+            {
+                throw (ex);
             }
         }
-    });
-</script>
 
-@model userEmail
+        public static string encryptPassword(string pass)
+        {
+            byte[] encode = new byte[pass.Length];
+            encode = System.Text.Encoding.UTF8.GetBytes(pass);
+            string encodedData = Convert.ToBase64String(encode);
+            return encodedData;
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+    }
+}
+
+@model ResetPasswordModel
 @{
-    ViewData["Title"] = "Forgot Password Page";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <div class="row d-flex justify-content-center align-items-center">
@@ -82,39 +173,31 @@ The minimum number of additional chocolates Harkirat needs to sell to achieve a 
         PIZZASHOP
     </div>
 </div>
-<form asp-controller="Home" asp-action="sendEmailLink" method="post" class="row">
+<div class="row w-100 p-0">
+    <p class="col fs-3 welcome-text mx-8 my-1 p-0">Reset Your Password</p>
+</div>
+<form class="row" asp-controller="Home" asp-action="ResetPassword" method="post">
     <div class="row w-100">
-        <p class="col fs-3 welcome-text mx-8 my-1">Forgot Password</p>
+        <div class="col mx-8 my-2 position-relative w-100 p-0">
+            <input type="password" placeholder="New Password" class="icon-password col w-100 align-items-center" asp-for="NewPassword">
+            <i class="bi bi-eye-slash" id="togglePassword"></i>
+        </div>
     </div>
     <div class="row w-100">
-        <p class="col mx-8 my-1 recover-text"> enter your email and we'll send you a link to reset your password.</p>
-    </div>
-    <div class="row w-100">
-        <input type="email" placeholder="E-mail" asp-for="Email" name="Email" class="icon-email col mx-8 my-2" value="">
+        <div class="col mx-8 position-relative w-100 p-0">
+            <input type="password" placeholder="Confirm New Password" class="icon-password col w-100 align-items-center" asp-for="ConfirmPassword">
+            <i class="bi bi-eye-slash" id="togglePassword"></i>
+        </div>
     </div>
     <div class="row d-flex w-100">
-        <button class="send-button col mx-8 my-2" type="submit">Send</button>
+        <button type="submit" class="submit-button col mx-8 my-2">Submit</button>
     </div>
     <div class="row w-100">
         <div class="col d-flex w-100 justify-content-center align-items-center my-2">
-            <a class="row text-decoration-none" asp-controller="Home" asp-action="Index">
+            <a asp-controller="Home" asp-action="Index" class="row text-decoration-none">
                 Back to Login
             </a>
         </div>
     </div>
 </form>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const email = localStorage.getItem('loginEmail');
-        if (email) {
-            document.querySelector('input[name="Email"]').value = email;
-        }
-    });
-</script>
-public IActionResult ForgotPassword(UserDemo model)
-{
-    var Email = model.Email;
-    var vm = new userEmail();
-    vm.Email = Email;
-    return View(vm);
-}
+
