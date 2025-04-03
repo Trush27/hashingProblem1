@@ -1,202 +1,271 @@
-<!DOCTYPE html>
-<html>
+I'll help you implement the functionality to show dinetables according to sections, style the edit/delete icons to appear on hover, and add pagination/search functionality to the dinetables table. Here's how we can do it:
 
-<head>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
-    rel="stylesheet">
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>assignment</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/bootstrap.min.css">
-  <script src="/js/custom.js"></script>
-</head>
+### 1. First, let's update the JavaScript to load tables when a section is clicked:
 
-<body>
-  <div class="container-fluid">
-    <div class="row">
-      <div class="col-md-3 col-lg-2 d-none d-md-block sidebar">
-        <div class="sidebar-body">
-          <div class="col d-flex">
-            <div class="row w-50"><img class="" src="images/logos/pizzashop_logo.png " alt=""></div>
-            <div class="row fs-5 align-items-center">
-              <p class="brand-name-dashboard">PIZZASHOP </p>
+```javascript
+// Add this to your existing script section
+document.addEventListener("DOMContentLoaded", function() {
+    // Load tables when a section is clicked
+    document.querySelectorAll('.section-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const sectionId = this.getAttribute('data-section-id');
+            loadTables(sectionId, 1); // Load first page by default
+        });
+    });
+
+    // Load tables for the first section by default if exists
+    const firstSection = document.querySelector('.section-item');
+    if (firstSection) {
+        const sectionId = firstSection.getAttribute('data-section-id');
+        loadTables(sectionId, 1);
+    }
+});
+
+function loadTables(sectionId, page, searchTerm = '') {
+    fetch(`/SectionsAndTables/GetTablesBySection?sectionId=${sectionId}&page=${page}&searchTerm=${searchTerm}`)
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.querySelector('#SectionTable tbody');
+            tbody.innerHTML = '';
+            
+            data.tables.forEach(table => {
+                const statusText = table.status ? 'Available' : 'Occupied';
+                const statusClass = table.status ? 'text-success' : 'text-danger';
+                
+                const row = `
+                    <tr>
+                        <td><input class="form-check-input item-checkbox" type="checkbox" data-item-id="${table.tableid}"></td>
+                        <td class="align-middle">${table.tablename}</td>
+                        <td class="align-middle">${table.capacity}</td>
+                        <td class="align-middle ${statusClass}">${statusText}</td>
+                        <td class="align-middle">
+                            <i class="material-icons cursor-pointer" onclick="editTable(${table.tableid})">edit</i>
+                            <i class="material-icons cursor-pointer" onclick="deleteTable(${table.tableid})">delete</i>
+                        </td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+
+            // Update pagination controls
+            updatePaginationControls(data.totalItems, data.pageSize, data.currentPage, sectionId, searchTerm);
+        });
+}
+
+function updatePaginationControls(totalItems, pageSize, currentPage, sectionId, searchTerm) {
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const paginationContainer = document.querySelector('.pagination-container');
+    
+    if (!paginationContainer) {
+        // Create pagination container if it doesn't exist
+        const newPagination = document.createElement('div');
+        newPagination.className = 'row mt-4 pagination-container justify-content-end';
+        newPagination.innerHTML = `
+            <div class="col-md-8 d-flex align-items-center justify-content-end">
+                <div class="row mx-2">
+                    <select class="form-select page-size-select">
+                        <option value="5" ${pageSize == 5 ? 'selected' : ''}>5</option>
+                        <option value="10" ${pageSize == 10 ? 'selected' : ''}>10</option>
+                        <option value="15" ${pageSize == 15 ? 'selected' : ''}>15</option>
+                    </select>
+                </div>
+                <div>
+                    <span class="text-muted">
+                        Showing ${Math.min((currentPage - 1) * pageSize + 1, totalItems)} - ${Math.min(currentPage * pageSize, totalItems)} of ${totalItems}
+                    </span>
+                </div>
+                <div>
+                    ${currentPage > 1 ? 
+                        `<button class="btn btn-outline-primary mx-1 prev-page">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>` : 
+                        `<span class="btn btn-outline-secondary mx-1 disabled"><i class="fas fa-chevron-left"></i></span>`}
+                    
+                    ${currentPage < totalPages ? 
+                        `<button class="btn btn-outline-primary mx-1 next-page">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>` : 
+                        `<span class="btn btn-outline-secondary mx-1 disabled"><i class="fas fa-chevron-right"></i></span>`}
+                </div>
             </div>
-          </div>
-          <div class="col">
-            <ul class="d-flex col flex-column">
-              <li class="sidebar-item ">
-                <img src="images/icons/customer.svg" alt="" class="col">
-                <span class="col"><a href="dashboard.html" class="text-decoration-none">Dashboard</a></span>
-              </li>
-              <li class="sidebar-item m-2">
-                <img src="images/icons/customer.svg" alt="">
-                <span class=" color-primary"><a href="users.html" class="text-decoration-none ">Users</a></span>
-              </li>
-              <li class="sidebar-item m-2">
-                <img src="images/icons/customer.svg" alt="">
-                <span class=""><a href="dashboard.html" class="text-decoration-none">role and permissions</a></span>
-              </li>
-              <li class="sidebar-item m-2">
-                <img src="images/icons/customer.svg" alt="">
-                <span class=""><a href="dashboard.html" class="text-decoration-none">Menu</a></span>
-              </li>
-              <li class="sidebar-item m-2">
-                <img src="images/icons/customer.svg" alt="">
-                <span class=""><a href="dashboard.html" class="text-decoration-none">tables and sections</a></span>
-              </li>
-              <li class="sidebar-item m-2">
-                <img src="images/icons/customer.svg" alt="">
-                <span class=""><a href="dashboard.html" class="text-decoration-none">taxes and fees</a></span>
-              </li>
-              <li class="sidebar-item m-2">
-                <img src="images/icons/customer.svg" alt="">
-                <span class=""><a href="dashboard.html" class="text-decoration-none">Orders</a></span>
-              </li>
-              <li class="sidebar-item m-2">
-                <img src="images/icons/customer.svg" alt="">
-                <span class=""><a href="dashboard.html" class="text-decoration-none">Customers</a></span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
+        `;
+        
+        document.querySelector('.col-md-9').appendChild(newPagination);
+        
+        // Add event listeners
+        document.querySelector('.page-size-select').addEventListener('change', function() {
+            const newPageSize = this.value;
+            loadTables(sectionId, 1, searchTerm, newPageSize);
+        });
+        
+        if (currentPage > 1) {
+            document.querySelector('.prev-page').addEventListener('click', function() {
+                loadTables(sectionId, currentPage - 1, searchTerm, pageSize);
+            });
+        }
+        
+        if (currentPage < totalPages) {
+            document.querySelector('.next-page').addEventListener('click', function() {
+                loadTables(sectionId, currentPage + 1, searchTerm, pageSize);
+            });
+        }
+    }
+}
 
-      <div class="col-md-9 col-lg-10 main-content">
-        <div class="row-1 navbar-profile w-100">
-          <button class="btn toggle-sidebar d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
-            <img src="images/menu-item-icon.png" alt="" height="30px">
-          </button>
-          <img class="col my-2 mx-2" src="images/Default_pfp.svg.png" alt="" height="30px">
-        </div>
-        <div class="row-11 d-flex my-2 ">
-          <div class="col-6 text-Users-title fs-2">
-            Add New User
-          </div>
-          <div class="col-6 d-flex justify-content-end">
-            <button onclick="backToUsers()" class=" back-button mx-1 p-2">
-              Back
-            </button>
-          </div>
-        </div>
-        <div class="add-user-frame">
-          <div class="form-floating row m-2">
-            <input class=" col m-2 p-3" placeholder="" id="floatingTextarea"></textarea>
-            <label for="floatingTextarea">First Name</label>
-            <input class=" col m-2 p-3" placeholder="Last Name" id="floatingTextarea2"></textarea>
-            <label for="floatingTextarea2"></label>
-          </div>
-          <div class="row m-2">
-            <input type="textbox" class="col m-2 p-3" placeholder="User Name">
-            <select class="form-select col m-2 p-3" aria-label="Default select example">
-              <option selected>Select role</option>
-              <option value="1">Chef</option>
-              <option value="2">Account Manager</option>
-              <option value="3">Admin</option>
-            </select>
-          </div>
-          <div class="row m-2">
-            <input type="textbox" class="col m-2 p-3" placeholder="Email">
-            <input type="textbox" class="col m-2 p-3" placeholder="Password">
-          </div>
-          <div class="row m-2">
-            <button class="select-profile-picture col d-flex flex-column justify-content-center align-items-center m-2 p-3">
-              <img src="images/icons/customer.svg" class="m-2" alt="">
-              Browse-files
-            </button>
-          </div>
-          <div class="row m-2">
-            <select class="form-select col m-2 p-3" aria-label="Default select example">
-              <option selected>Select Country</option>
-              <option value="1">India</option>
-              <option value="2">Japan</option>
-            </select>
-            <select class="form-select col m-2 p-3" aria-label="Default select example">
-              <option selected>Select State</option>
-              <option value="1">Gujarat</option>
-              <option value="2">Rajasthan</option>
-            </select>
-            <select class="form-select col m-2 p-3" aria-label="Default select example">
-              <option selected>Select City</option>
-              <option value="1">Ahmedabad</option>
-              <option value="2">Surat</option>
-            </select>
-          </div>
-          <div class="row m-2">
-            <input type="textbox" class="col m-2 p-3" placeholder="Zipcode">
-            <input type="textbox" class="col m-2 p-3" placeholder="Address">
-            <input type="textbox" class="col m-2 p-3" placeholder="Phone">
-          </div>
-          <div class="row m-2 my-3">
-            <div class="col my-2">
-              <button class="create-user-button p-2">
-                Create User
-              </button>
-              <button class="cancel-user-button p-2">
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+// Add search functionality
+document.getElementById('searchItem').addEventListener('input', function() {
+    const searchTerm = this.value;
+    const activeSection = document.querySelector('.section-item.active');
+    if (activeSection) {
+        const sectionId = activeSection.getAttribute('data-section-id');
+        loadTables(sectionId, 1, searchTerm);
+    }
+});
+```
 
-  <!-- Offcanvas Sidebar for Smaller Screens -->
-  <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar" aria-labelledby="sidebarLabel">
-    <div class="offcanvas-header">
-      <h5 class="offcanvas-title" id="sidebarLabel">PIZZASHOP</h5>
-      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-    <div class="offcanvas-body">
-      <div class="col d-flex">
-        <div class="row w-50"><img class="" src="images/logos/pizzashop_logo.png " alt=""></div>
-        <div class="row fs-5 align-items-center">
-          <p class="brand-name-dashboard">PIZZASHOP </p>
-        </div>
-      </div>
-      <div class="col">
-        <ul class="d-flex col flex-column">
-          <li class="sidebar-item ">
-            <img src="images/icons/customer.svg" alt="" class="col">
-            <span class="col"><a href="dashboard.html" class="text-decoration-none">Dashboard</a></span>
-          </li>
-          <li class="sidebar-item m-2">
-            <img src="images/icons/customer.svg" alt="">
-            <span class=" color-primary"><a href="users.html" class="text-decoration-none ">Users</a></span>
-          </li>
-          <li class="sidebar-item m-2">
-            <img src="images/icons/customer.svg" alt="">
-            <span class=""><a href="dashboard.html" class="text-decoration-none">role and permissions</a></span>
-          </li>
-          <li class="sidebar-item m-2">
-            <img src="images/icons/customer.svg" alt="">
-            <span class=""><a href="dashboard.html" class="text-decoration-none">Menu</a></span>
-          </li>
-          <li class="sidebar-item m-2">
-            <img src="images/icons/customer.svg" alt="">
-            <span class=""><a href="dashboard.html" class="text-decoration-none">tables and sections</a></span>
-          </li>
-          <li class="sidebar-item m-2">
-            <img src="images/icons/customer.svg" alt="">
-            <span class=""><a href="dashboard.html" class="text-decoration-none">taxes and fees</a></span>
-          </li>
-          <li class="sidebar-item m-2">
-            <img src="images/icons/customer.svg" alt="">
-            <span class=""><a href="dashboard.html" class="text-decoration-none">Orders</a></span>
-          </li>
-          <li class="sidebar-item m-2">
-            <img src="images/icons/customer.svg" alt="">
-            <span class=""><a href="dashboard.html" class="text-decoration-none">Customers</a></span>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </div>
+### 2. Add this CSS to style the edit/delete icons:
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+```css
+/* Add this to your CSS file or in a style tag */
+.section-item {
+    position: relative;
+    padding-right: 60px !important; /* Make space for icons */
+    transition: background-color 0.3s;
+}
 
-</html>
+.section-item .icon-container {
+    position: absolute;
+    right: 10px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.section-item:hover .icon-container {
+    opacity: 1;
+}
+
+.section-item.active {
+    background-color: #e9ecef;
+    font-weight: bold;
+}
+
+.material-icons {
+    cursor: pointer;
+    font-size: 18px;
+    margin-left: 5px;
+}
+
+.material-icons:hover {
+    color: #0d6efd;
+}
+```
+
+### 3. Update your controller to handle table loading:
+
+```csharp
+[HttpGet]
+public async Task<IActionResult> GetTablesBySection(int sectionId, int page = 1, int pageSize = 5, string searchTerm = "")
+{
+    try
+    {
+        var (tables, totalItems) = await _sectionTableService.GetTablesBySectionAsync(sectionId, page, pageSize, searchTerm);
+        
+        return Ok(new {
+            tables = tables,
+            totalItems = totalItems,
+            currentPage = page,
+            pageSize = pageSize
+        });
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine(ex.Message);
+        return StatusCode(500, "Internal server error");
+    }
+}
+```
+
+### 4. Add this to your service interface and implementation:
+
+```csharp
+// In your ISectionAndTableService interface
+Task<(List<DinetableViewModel> tables, int totalItems)> GetTablesBySectionAsync(int sectionId, int page, int pageSize, string searchTerm);
+
+// In your SectionAndTableService implementation
+public async Task<(List<DinetableViewModel> tables, int totalItems)> GetTablesBySectionAsync(int sectionId, int page, int pageSize, string searchTerm)
+{
+    var query = _context.Dinetables
+        .Where(t => t.Sectionid == sectionId && !t.Isdeleted);
+        
+    if (!string.IsNullOrEmpty(searchTerm))
+    {
+        query = query.Where(t => t.Tablename.Contains(searchTerm));
+    }
+    
+    var totalItems = await query.CountAsync();
+    
+    var tables = await query
+        .OrderBy(t => t.Tablename)
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .Select(t => new DinetableViewModel {
+            Tableid = t.Tableid,
+            Tablename = t.Tablename,
+            Capacity = t.Capacity,
+            Status = t.Status,
+            Sectionid = t.Sectionid
+        })
+        .ToListAsync();
+        
+    return (tables, totalItems);
+}
+```
+
+### 5. Create a DinetableViewModel:
+
+```csharp
+namespace Entity.ViewModel;
+
+public class DinetableViewModel
+{
+    public int Tableid { get; set; }
+    public string Tablename { get; set; } = null!;
+    public int Capacity { get; set; }
+    public bool Status { get; set; }
+    public int Sectionid { get; set; }
+}
+```
+
+### 6. Update your section click handler to add active class:
+
+```javascript
+// Add this to your existing script
+document.querySelectorAll('.section-item').forEach(item => {
+    item.addEventListener('click', function(e) {
+        e.preventDefault();
+        // Remove active class from all sections
+        document.querySelectorAll('.section-item').forEach(i => i.classList.remove('active'));
+        // Add active class to clicked section
+        this.classList.add('active');
+        const sectionId = this.getAttribute('data-section-id');
+        loadTables(sectionId, 1);
+    });
+});
+```
+
+This implementation will:
+1. Show tables when a section is clicked
+2. Display edit/delete icons only on hover for sections
+3. Add pagination with page size selection
+4. Add search functionality for tables
+5. Show active section with different styling
+6. Maintain all the existing functionality
+
+Make sure to:
+1. Add Font Awesome for the chevron icons in your layout
+2. Add the CSS styles to your stylesheet
+3. Update your controller and service with the new methods
+4. Create the DinetableViewModel class
+
+The tables will now load dynamically when sections are clicked, with full pagination and search functionality similar to your example.
